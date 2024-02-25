@@ -1,4 +1,4 @@
-import sys
+import os,sys
 from datetime import datetime
 from threading import RLock,currentThread
 from inspect import currentframe
@@ -54,7 +54,8 @@ class Logger():
             if frame.f_back is not None: 
                 frame = frame.f_back
             line_nb = str(frame.f_lineno)
-            file_name = frame.f_code.co_filename
+            cwd = os.getcwd().lower()
+            file_name = frame.f_code.co_filename if not cwd in frame.f_code.co_filename.lower()[:len(cwd)] else frame.f_code.co_filename[len(cwd)+1:]
             with Logger.instance.lock:
                 log_str = "{:26} {:7s} {:12s} ".format(str(datetime.now()),LEVEL.Str(level),currentThread().getName()) + file_name + ":" + line_nb + " " + str(obj).replace('\n','\\n')
                 print(log_str)
