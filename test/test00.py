@@ -7,10 +7,9 @@
 # upload :
 # twine check dist/*
 
-import sys
-import os
-cwd = os.getcwd()
-sys.path.append('src')
+import os,sys
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(project_root, 'src'))
 
 from og_log import LOG,LEVEL
 
@@ -21,4 +20,6 @@ LOG.info("this is a info log")
 LOG.warning("this is a warning log")
 LOG.error("this is a error log")
 LOG.fatal("this is a fatal log")
-#LOG.temp("this is a temp log")
+LOG.temp("this is a temp log")
+
+

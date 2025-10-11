@@ -1,32 +1,26 @@
 import os,sys
 from datetime import datetime
-from threading import RLock,currentThread
+from threading import RLock,current_thread
 from inspect import currentframe
 
 class LEVEL():
-    debug = 10
-    info = 20
-    warning = 30
-    error = 40
-    fatal = 50
-    temp = 100
+    debug = (10,None,"DEBUG")
+    info = (20,None,"INFO")
+    warning = (30,"●","WARN")
+    error = (40,"■","ERROR")
+    fatal = (50,"▲","FATAL")
+    temp = (60,"~","TEMP")
+    undef = (99,"!","UNDEF")
+
+    @staticmethod
+    def _format(level):
+        return "{:7s}".format((level[1]+' ' if level[1] is not None else '  ')+level[2])
     
     @staticmethod
     def Str(level):
-        if level == LEVEL.fatal:
-            return "▲FATAL"
-        elif level == LEVEL.error:
-            return "△ERROR"
-        elif level == LEVEL.warning:
-            return "●WARN"
-        elif level == LEVEL.info:
-            return " INFO"
-        elif level == LEVEL.debug:
-            return " DEBUG"
-        elif level == LEVEL.temp:
-            return "○TEMP"
-        else:
-            return "UNDEF"
+        if level in [LEVEL.debug,LEVEL.info,LEVEL.warning,LEVEL.error,LEVEL.fatal,LEVEL.temp]:
+            return LEVEL._format(level)
+        return LEVEL._format(LEVEL.undef)
 
 class Logger():
     instance = None
@@ -42,12 +36,11 @@ class Logger():
 
     @staticmethod
     def Get():
-        if Logger.instance is None:
-            Logger()
+        if Logger.instance is None: Logger()
         return Logger.instance
   
     def log(self,level,obj):
-        if Logger.instance.dolog and Logger.instance.level <= level:
+        if Logger.instance.dolog and Logger.instance.level[0] <= level[0]:
             frame = currentframe()
             while frame.f_back is not None and frame.f_back.f_code.co_filename.find('log.py') != -1: 
                 frame = frame.f_back
@@ -57,7 +50,7 @@ class Logger():
             cwd = os.getcwd().lower()
             file_name = frame.f_code.co_filename if not cwd in frame.f_code.co_filename.lower()[:len(cwd)] else frame.f_code.co_filename[len(cwd)+1:]
             with Logger.instance.lock:
-                log_str = "{:26} {:7s} {:12s} ".format(str(datetime.now()),LEVEL.Str(level),currentThread().getName()) + file_name + ":" + line_nb + " " + str(obj).replace('\n','\\n')
+                log_str = ("{:26} "+LEVEL.Str(level)+" {:12s} ").format(str(datetime.now()),current_thread().name) + file_name + ":" + line_nb + " " + str(obj).replace('\n','\\n')
                 print(log_str)
                 for cb in Logger.instance.custom_callback: 
                     try:
