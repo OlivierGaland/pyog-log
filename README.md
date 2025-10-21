@@ -73,9 +73,9 @@ LOG.register_cb(EmailCallback(email='admin@example.com'))
 ### Registering/Unregistering callbacks :  
 
 ```python
-LOG.start(callbacks=[ ColoredConsoleCallback() ]) # Set at start, accept single callback or list of callbacks
-LOG.register_cb(ColoredConsoleCallback())         # Add one callback dynamically (return callback object reference)  
-LOG.remove_cb(cb_obj_reference)                   # Remove one callback dynamically  
+LOG.start(callbacks=[ ColoredConsoleCallback() ]) # Set at start, accept single callback or list of callbacks (return list of callback object references)
+hdl = LOG.register_cb(ColoredConsoleCallback())   # Add one callback dynamically (return callback object reference)  
+LOG.remove_cb(hdl)                                # Remove one callback dynamically  
 LOG.remove_all_cb()                               # Remove all callbacks  
 ```
 
