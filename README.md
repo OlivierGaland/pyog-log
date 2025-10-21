@@ -1,4 +1,8 @@
 # pyog-log
+
+[![PyPI version](https://badge.fury.io/py/og-log.svg)](https://pypi.org/project/og-log/)
+[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+
 Simple python logger (multithreading capable)
 
 ## Installation :
