@@ -22,6 +22,7 @@ temp : for temporary lines (always visible, max priority, DEL tag to not commit)
 
 You can set priority (default is LEVEL.debug): 
 ```python 
+from og_log import LOG,LEVEL
 LOG.start(level=LEVEL.warning)  # Show all traces >= LEVEL.warning , set at start  
 LOG.level(LEVEL.error)          # Change the priority dynamically  
 ```
@@ -80,6 +81,8 @@ LOG.remove_all_cb()                               # Remove all callbacks
 
 ## Screenshots :
 
+### Colored console
+<img width="636" height="106" alt="image" src="https://github.com/user-attachments/assets/6ec0c154-7a97-4960-88b4-c3a0c2a416a9" />
 
 
 
