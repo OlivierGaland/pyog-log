@@ -1,26 +1,35 @@
 import os,sys
+from enum import Enum
 from datetime import datetime
 from threading import RLock,current_thread
 from inspect import currentframe
 
-class LEVEL():
-    debug = (10,None,"DEBUG")
-    info = (20,None,"INFO")
-    warning = (30,"●","WARN")
-    error = (40,"■","ERROR")
-    fatal = (50,"▲","FATAL")
-    temp = (60,"~","TEMP")
-    undef = (99,"!","UNDEF")
+from .callbacks import LoggerCallback
+from .callback.console import ConsoleCallback
 
-    @staticmethod
-    def _format(level):
-        return "{:7s}".format((level[1]+' ' if level[1] is not None else '  ')+level[2])
+class LEVEL(Enum):
+    debug = (10,None,"DBG")
+    info = (20,None,"INF")
+    warning = (30,"●","WRN")
+    error = (40,"■","ERR")
+    fatal = (50,"▲","FTL")
+    temp = (99,"!","DEL")
+
+    @property
+    def priority(self):
+        return self.value[0]
     
-    @staticmethod
-    def Str(level):
-        if level in [LEVEL.debug,LEVEL.info,LEVEL.warning,LEVEL.error,LEVEL.fatal,LEVEL.temp]:
-            return LEVEL._format(level)
-        return LEVEL._format(LEVEL.undef)
+    @property
+    def symbol(self):
+        return self.value[1]
+    
+    @property
+    def name_str(self):
+        return self.value[2]
+    
+    def __str__(self):
+        prefix = self.symbol + ' ' if self.symbol else '  '
+        return f"{prefix}{self.name_str:3s}"    
 
 class Logger():
     instance = None
@@ -31,44 +40,85 @@ class Logger():
             Logger.instance = self
             Logger.instance.dolog = False
             Logger.instance.level = LEVEL.debug
-            Logger.instance.custom_callback = []
+            Logger.instance.callbacks = []
             Logger.instance.lock = RLock()
+            Logger.instance.cwd = os.getcwd().lower()
 
     @staticmethod
     def Get():
         if Logger.instance is None: Logger()
         return Logger.instance
-  
-    def log(self,level,obj):
-        if Logger.instance.dolog and Logger.instance.level[0] <= level[0]:
-            frame = currentframe()
-            while frame.f_back is not None and frame.f_back.f_code.co_filename.find('log.py') != -1: 
-                frame = frame.f_back
-            if frame.f_back is not None: 
-                frame = frame.f_back
+
+    def _format_line(self,level,obj):
+        frame = currentframe()
+        if frame is not None:
+            while frame.f_back is not None and frame.f_back.f_code.co_filename.find('log.py') != -1: frame = frame.f_back
+            if frame.f_back is not None: frame = frame.f_back
             line_nb = str(frame.f_lineno)
-            cwd = os.getcwd().lower()
-            file_name = frame.f_code.co_filename if not cwd in frame.f_code.co_filename.lower()[:len(cwd)] else frame.f_code.co_filename[len(cwd)+1:]
+            full_path = frame.f_code.co_filename.lower()
+            if full_path.startswith(Logger.instance.cwd + os.sep): file_name = frame.f_code.co_filename[len(Logger.instance.cwd)+1:]
+            else: file_name = frame.f_code.co_filename
+        else:
+            file_name = "Logger"
+            line_nb = "0"
+        return ("{:26} {:5s} {:12s} ").format(str(datetime.now()),level,current_thread().name) + file_name + ":" + line_nb + " " + str(obj).replace('\n','\\n')
+
+    def _try_callback(self, cb, log_str):
+        try:
+            cb(log_str)
+            return True
+        except Exception as e:
+            try:
+                print("Logger : Exception in callback "+str(cb.__class__.__name__)+", unregistering. Exception : "+str(e),file=sys.stderr)
+                sys.stderr.flush()
+                cb.close()
+            except: pass
+            return False
+
+    def log(self,level,obj):
+        if Logger.instance.dolog and Logger.instance.level.priority <= level.priority:
+            log_str = self._format_line(level,obj)
             with Logger.instance.lock:
-                log_str = ("{:26} "+LEVEL.Str(level)+" {:12s} ").format(str(datetime.now()),current_thread().name) + file_name + ":" + line_nb + " " + str(obj).replace('\n','\\n')
-                print(log_str)
-                for cb in Logger.instance.custom_callback: 
+                Logger.instance.callbacks = [ cb for cb in Logger.instance.callbacks if self._try_callback(cb, log_str) ]
+                if len(Logger.instance.callbacks) == 0:
                     try:
-                        cb[0](log_str,cb[1])                       # custom callback : file , udp console ...    cb is a 2-uple of (callback,parameters)
-                    except  Exception as e:
-                        Logger.instance.custom_callback.remove(cb)
-                        LOG.warning("Exception in custom callback , unregistering : "+str(e))
-            sys.stdout.flush()
-                        
+                        print("Logger : All callback unregistered, logging disabled",file=sys.stderr)
+                        sys.stderr.flush()
+                    except: pass
+                    Logger.instance.dolog = False             
+
             
 class LOG():
-    @staticmethod
-    def register_cb(callback_def_tuple):
-        Logger.Get().custom_callback.append(callback_def_tuple)
 
     @staticmethod
-    def start():
+    def register_cb(callback_object):
+        if not isinstance(callback_object, LoggerCallback): raise Exception("callback_object must be of type LoggerCallback")
+        Logger.Get().callbacks.append(callback_object)
+        return callback_object
+
+    @staticmethod
+    def remove_cb(callback_object):
+        if not isinstance(callback_object, LoggerCallback): raise Exception("callback_object must be of type LoggerCallback")
+        if callback_object not in Logger.Get().callbacks: raise Exception("callback_object not registered")
+        Logger.Get().callbacks.remove(callback_object)
+        callback_object.close()
+
+    @staticmethod
+    def remove_all_cb():
+        for cb in Logger.Get().callbacks[:]:
+            try: cb.close()
+            except: pass
+        Logger.Get().callbacks.clear()        
+
+    @staticmethod
+    def start(**kwargs):
+        Logger.Get().level = kwargs.get('level',LEVEL.debug)
+        callbacks = kwargs.get('callbacks',[ ConsoleCallback() ])
+        if not isinstance(callbacks, list): callbacks = [ callbacks ]
+        if len(callbacks) == 0: callbacks = [ ConsoleCallback() ]
+        Logger.Get().callbacks = callbacks
         Logger.Get().dolog = True
+        return Logger.Get().callbacks
 
     @staticmethod
     def stop():
@@ -101,4 +151,3 @@ class LOG():
     @staticmethod
     def temp(obj):
         Logger.Get().log(LEVEL.temp,obj)
-
