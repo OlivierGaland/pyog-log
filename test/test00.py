@@ -54,6 +54,11 @@ if __name__ == '__main__':
     for _ in range(10):
         test_logger()
 
+    LOG.set_format("%level.short %date ==> %message")
+    LOG.remove_all_cb()
+    colored_console = LOG.register_cb(ColoredConsoleCallback())
+    test_logger()
+
     LOG.stop()
 
 

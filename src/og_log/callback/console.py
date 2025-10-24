@@ -45,7 +45,7 @@ class ColoredConsoleCallback(LoggerCallback):
             # Find level in log string
             colored = log_str
             for level, color in self.COLORS.items():
-                if f' {level} ' in log_str:
+                if f'{level} ' in log_str or f' {level}' in log_str:
                     colored = f"{color}{log_str}{self.COLORS['RESET']}"
                     break
             print(colored, file=self.stream)
