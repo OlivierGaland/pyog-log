@@ -1,4 +1,8 @@
 # pyog-log
+
+[![PyPI version](https://badge.fury.io/py/og-log.svg)](https://pypi.org/project/og-log/)
+[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+
 Simple python logger (multithreading capable)
 
 ## Installation :
@@ -22,6 +26,7 @@ temp : for temporary lines (always visible, max priority, DEL tag to not commit)
 
 You can set priority (default is LEVEL.debug): 
 ```python 
+from og_log import LOG,LEVEL
 LOG.start(level=LEVEL.warning)  # Show all traces >= LEVEL.warning , set at start  
 LOG.level(LEVEL.error)          # Change the priority dynamically  
 ```
@@ -72,14 +77,16 @@ LOG.register_cb(EmailCallback(email='admin@example.com'))
 ### Registering/Unregistering callbacks :  
 
 ```python
-LOG.start(callbacks=[ ColoredConsoleCallback() ]) # Set at start, accept single callback or list of callbacks
-LOG.register_cb(ColoredConsoleCallback())         # Add one callback dynamically (return callback object reference)  
-LOG.remove_cb(cb_obj_reference)                   # Remove one callback dynamically  
+LOG.start(callbacks=[ ColoredConsoleCallback() ]) # Set at start, accept single callback or list of callbacks (return list of callback object references)
+hdl = LOG.register_cb(ColoredConsoleCallback())   # Add one callback dynamically (return callback object reference)  
+LOG.remove_cb(hdl)                                # Remove one callback dynamically  
 LOG.remove_all_cb()                               # Remove all callbacks  
 ```
 
 ## Screenshots :
 
+### Colored console
+<img width="636" height="106" alt="image" src="https://github.com/user-attachments/assets/6ec0c154-7a97-4960-88b4-c3a0c2a416a9" />
 
 
 
