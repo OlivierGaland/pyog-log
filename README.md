@@ -83,8 +83,6 @@ LOG.remove_cb(hdl)                                # Remove one callback dynamica
 LOG.remove_all_cb()                               # Remove all callbacks  
 ```
 
-## Customize display :
-
 ## Customize display format :
 
 You can customize the log line format using tokens. The default format is:
