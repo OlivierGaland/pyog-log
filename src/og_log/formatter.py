@@ -1,4 +1,4 @@
-import os, re, inspect, sys
+import os, re, inspect
 from datetime import datetime
 from enum import Enum
 from threading import current_thread
@@ -10,6 +10,7 @@ class FormatCallbackType(Enum):
     message = "Message"
     file = "File"
     standard = "Standard"
+    text = "Text"
 
 class Formatter():
     DEFAULT_FORMAT = "%date %level %thread %file %message"
@@ -24,10 +25,9 @@ class Formatter():
         if len(tokens_found) == 0: raise Exception("No tokens found in format string")
 
         for token in tokens_found:
-            line = line.lstrip()
             if not line.startswith(token):
                 text, line = line.split(token, 1)
-                self.line_canvas.append((FormatCallbackType.standard, self._token_text, {'text': text.strip()}))
+                self.line_canvas.append((FormatCallbackType.text, self._token_text, {'text': text}))
                 line = token + line
 
             tp, callback, kwargs = Formatter.TOKENS[token]
@@ -35,8 +35,8 @@ class Formatter():
             self.line_canvas.append((tp, callback, kwargs))
             line = line.split(token,1)[1]
 
-        if len(line.strip()) > 0 :
-            self.line_canvas.append((FormatCallbackType.standard, self._token_text, {'text': line.strip()}))
+        if len(line.rstrip()) > 0 :
+            self.line_canvas.append((FormatCallbackType.text, self._token_text, {'text': line.rstrip()}))
 
     @staticmethod
     def _token_date(**kwargs):
@@ -68,6 +68,7 @@ class Formatter():
             filename = os.path.basename(frame_info.filename)
             if filename not in [ 'log.py' ]:
                 file_name , line_nb =  os.path.relpath(frame_info.filename,kwargs.get('cwd','')), frame_info.lineno
+                break
 
         return "{}".format(file_name + ":" + str(line_nb))
 
@@ -80,15 +81,17 @@ class Formatter():
         return kwargs.get('text','')
 
     def format_line(self,level,message):
-        field_list = []
+        line = ""
         for tp,callback,kwargs in self.line_canvas:
             if tp == FormatCallbackType.level:
-                field_list.append(callback(level=level,**kwargs))
+                line += callback(level=level,**kwargs)
             elif tp == FormatCallbackType.message:
-                field_list.append(callback(message=message,**kwargs))
+                line += callback(message=message,**kwargs)
             elif tp == FormatCallbackType.standard or tp == FormatCallbackType.file:
-                field_list.append(callback(**kwargs))
-        return " ".join(field_list)
+                line += callback(**kwargs)
+            elif tp == FormatCallbackType.text:
+                line += callback(**kwargs)
+        return line
 
 Formatter.TOKENS = {
     '%date': (FormatCallbackType.standard,Formatter._token_date,{'format': '%Y-%m-%d %H:%M:%S.%f'}),

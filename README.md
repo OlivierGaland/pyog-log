@@ -83,6 +83,60 @@ LOG.remove_cb(hdl)                                # Remove one callback dynamica
 LOG.remove_all_cb()                               # Remove all callbacks  
 ```
 
+## Customize display :
+
+## Customize display format :
+
+You can customize the log line format using tokens. The default format is:
+```python
+"%date %level %thread %file %message"
+```
+
+### Setting custom format:
+```python
+from og_log import LOG
+
+# At start
+LOG.start(format="%date.ms %level.short [%thread] %file - %message")
+
+# Or dynamically
+LOG.set_format("%date.s %level %message")
+```
+
+### Available tokens:
+
+| Token | Description | Example Output |
+|-------|-------------|----------------|
+| `%date` | Full date with microseconds | `2025-10-25 14:30:45.123456` |
+| `%date.us` | Date with microseconds (same as %date) | `2025-10-25 14:30:45.123456` |
+| `%date.ms` | Date with milliseconds | `2025-10-25 14:30:45.123` |
+| `%date.s` | Date with seconds | `2025-10-25 14:30:45` |
+| `%level` | Level with symbol prefix | `  DBG` / `● WRN` |
+| `%level.short` | Level name only (3 chars) | `DBG` / `WRN` |
+| `%level.prefix` | Level with symbol prefix (same as %level) | `  DBG` / `● WRN` |
+| `%level.suffix` | Level with symbol suffix | `DBG  ` / `WRN ●` |
+| `%thread` | Thread name (12 chars padded) | `MainThread` |
+| `%file` | Relative file path and line number | `src/main.py:42` |
+| `%message` | The log message | Your log message |
+
+### Format examples:
+```python
+# Minimal format
+LOG.set_format("%level.short %message")
+# Output: DBG Starting application
+
+# Detailed format with milliseconds
+LOG.set_format("%date.ms [%thread] %level %file - %message")
+# Output: 2025-10-25 14:30:45.123 [MainThread] ● DBG src/main.py:42 - Starting application
+
+# Custom text with tokens
+LOG.set_format("[%date.s] <%level.short> %message")
+# Output: [2025-10-25 14:30:45] <DBG> Starting application
+```
+
+**Note:** You can add custom text between tokens. The formatter will preserve spacing and special characters.
+
+
 ## Screenshots :
 
 ### Colored console
