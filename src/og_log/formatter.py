@@ -1,8 +1,7 @@
-import os, re
+import os, re, inspect
 from datetime import datetime
 from enum import Enum
 from threading import current_thread
-from inspect import currentframe
 
 from .level import LEVEL
 
@@ -63,26 +62,23 @@ class Formatter():
 
     @staticmethod
     def _token_file(**kwargs):
+    
+        frame = inspect.currentframe() 
+        ignored_path_parts = (
+            'og_log',
+        )
 
-        cwd = kwargs.get('cwd','').lower()
-        frame = currentframe()
-        if frame is not None:
-            while frame.f_back is not None and frame.f_back.f_code.co_filename.find('log.py') != -1: frame = frame.f_back
-            if frame.f_back is not None: frame = frame.f_back
-            line_nb = str(frame.f_lineno)
-            full_path = frame.f_code.co_filename.lower()
-            if full_path.startswith(cwd + os.sep): file_name = frame.f_code.co_filename[len(cwd)+1:]
-            else: file_name = frame.f_code.co_filename
-        else:
-            file_name = "Logger"
-            line_nb = "0"
-
-        # file_name , line_nb = "Logger", 0
-        # for frame_info in inspect.stack()[1:]:  # Skip current frame
-        #     filename = os.path.basename(frame_info.filename)
-        #     if filename not in [ 'log.py' ]:
-        #         file_name , line_nb =  os.path.relpath(frame_info.filename,kwargs.get('cwd','')), frame_info.lineno
-        #         break
+        file_name , line_nb = "Logger", 0
+        try:
+            while frame:
+                filename = frame.f_code.co_filename
+                is_internal_logger_file = any(part in filename for part in ignored_path_parts)
+                if not is_internal_logger_file:
+                    file_name , line_nb =  os.path.relpath(frame.f_code.co_filename,kwargs.get('cwd','')), frame.f_lineno
+                    break
+                frame = frame.f_back
+        except Exception as e:
+            pass
 
         return "{}".format(file_name + ":" + str(line_nb))
 
